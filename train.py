@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import torch
 from torch import nn, optim
+from time import time
 
 import classifier_network
 import train_utils
@@ -17,23 +18,20 @@ def main():
         input_size = 25088
     elif input_arguments.arch == 'alexnet':
         input_size = 9216
+    elif input_arguments.arch == 'densenet':
+        input_size = 1024        
+        
     classifier = classifier_network.Network(input_size, 102, [input_arguments.hidden_units])
     model.classifier = classifier
     
     image_datasets = train_utils.get_image_datasets(input_arguments.data_dir)
     image_loader = train_utils.get_image_loader(image_datasets)
     
-    device = "cpu"
-    if input_arguments.gpu:
-        device = "cuda" if torch.cuda.is_available() else "cpu"  
-        if device == "cpu":
-            print('[DEVICE] ERROR: GPU is not available continueing with CPU')
-    if device == 'cuda':
-        print('[DEVICE] Using GPU to train model')  
-    else:
-        print('[DEVICE] Using CPU to train model')  
-    torch.device(device)
+    device = train_utils.get_device(input_arguments.gpu)
+    torch.device(device)  
     
+    start_time = time()
+
     criterion = nn.NLLLoss()
     # Only training the classifier parameters, feature parameters are frozen
     optimizer = optim.Adam(model.classifier.parameters(), lr=input_arguments.learning_rate)
@@ -96,7 +94,13 @@ def main():
                           f"Validation loss: {valid_loss/len(valid_loader):.3f}.. "
                           "Validation accuracy: {:.3f}%".format(accuracy/len(valid_loader) * 100))
                     running_loss = 0
-                    model.train()        
+                    model.train()     
+
+        end_time = time()
+        total_time = end_time - start_time
+        print("\n\t[-] Total Elapsed time:",
+              str(int((total_time/3600)))+":"+str(int((total_time%3600)/60))+":"
+              +str(int((total_time%3600)%60)) )            
         print('===== MODEL TRAINING COMPLETED =====\n')
         # print()
     except KeyboardInterrupt:
@@ -107,7 +111,7 @@ def main():
         saved, checkpoint_path = train_utils.save_model(model.cpu(), optimizer, image_datasets, input_arguments.arch, input_arguments.save_dir, input_size)
 
     if saved:
-        train_utils.test_saved_model(checkpoint_path, image_loader['test'], device, criterion, input_arguments.arch)
+        train_utils.test_saved_model(checkpoint_path, image_loader['test'], device, criterion)
 
         
 # Call to main function to run the program

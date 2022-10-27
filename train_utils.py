@@ -30,8 +30,8 @@ def get_input_args():
     parser.add_argument('--save_dir', type=str, default='saved_models/',
                         help='Path of the directory to save the checkpoints to') 
     parser.add_argument('--arch', type=str, default='vgg',
-                        help='Type of CNN model architecture to use', choices=['vgg', 'alexnet', 'resnet'])
-    parser.add_argument('--learning_rate', type=int, default=0.001,
+                        help='Type of CNN model architecture to use', choices=['vgg', 'alexnet', 'densenet'])
+    parser.add_argument('--learning_rate', type=float, default=0.001,
                         help='The learning rate to train the model on') 
     parser.add_argument('--hidden_units', type=int, default=667,
                         help='Size of the hidden unit') 
@@ -107,8 +107,8 @@ def get_model(arch):
         model = models.vgg11(pretrained=True)
     elif (arch == 'alexnet'):
         model = models.alexnet(pretrained=True)
-    elif (arch == 'resnet'):
-        model = models.resnet18(pretrained=True)
+    elif (arch == 'densenet'):
+        model = models.densenet121(pretrained=True)
         
     print('[MODEL] Fetching complete')
     return model
@@ -154,7 +154,7 @@ def delete_model(checkpoint_path):
         print('\t[DELETE MODEL] Model deleted')
     
 
-def load_checkpoint(checkpoint_path, arch):
+def load_checkpoint(checkpoint_path):
     """I took the below if else statement from the accepted answer of this stackoverflow question:
     https://stackoverflow.com/questions/55759311/runtimeerror-cuda-runtime-error-35-cuda-driver-version-is-insufficient-for
     """
@@ -164,16 +164,17 @@ def load_checkpoint(checkpoint_path, arch):
         map_location='cpu'
 
     checkpoint = torch.load(checkpoint_path, map_location=map_location)
+    arch = checkpoint['arch']
+    
     model = None
     if arch == 'vgg':
         model = models.vgg11()
     elif arch == 'alexnet':
         model = models.alexnet()
-    elif arch == 'resnet':
-        model = models.resnet18()
+    elif arch == 'densenet':
+        model = models.densenet121()
         
-    image_datasets = checkpoint['image_datasets']
-    
+    image_datasets = checkpoint['image_datasets']  
     classifier = classifier_network.Network(checkpoint['input_size'],
                              checkpoint['output_size'],
                              checkpoint['hidden_layers'])
@@ -189,9 +190,9 @@ def load_checkpoint(checkpoint_path, arch):
     return model, optimizer
 
 
-def test_saved_model(checkpoint_path, test_loader, device, criterion, arch):
+def test_saved_model(checkpoint_path, test_loader, device, criterion):
     print('\n===== SAVED MODEL TESTING STARTED =====')
-    model, optimizer = load_checkpoint(checkpoint_path, arch)
+    model, optimizer = load_checkpoint(checkpoint_path)
     
     model.to(device)
     test_loss = 0
@@ -216,3 +217,17 @@ def test_saved_model(checkpoint_path, test_loader, device, criterion, arch):
     print("\t[-] Test Loss: {:.3f}".format(test_loss/len(test_loader)))
     print("\t[-] Test Accuracy: {:.3f}%".format(accuracy/len(test_loader) * 100))
     print('\n===== SAVED MODEL TESTING COMPLETED =====')
+
+
+def get_device(use_gpu):
+    device = "cpu"
+    if use_gpu:
+        device = "cuda" if torch.cuda.is_available() else "cpu"  
+        if device == "cpu":
+            print('[DEVICE] ERROR: GPU is not available continuing with CPU')
+    if device == 'cuda':
+        print('[DEVICE] Using GPU to test model')  
+    else:
+        print('[DEVICE] Using CPU to test model')  
+        
+    return device
