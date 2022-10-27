@@ -13,15 +13,15 @@ import argparse
 import classifier_network
 
 
-"""
-This is the "get_input_args" file.
-
-The get_input_args file parses and gets the command-line input arguments.
-"""
-
 def get_input_args():
     """
-    Gets the command-line arguments passed by the user.
+    Gets the command-line arguments passed by the user. This function retrieves 
+    the 7 Command Line Arugment from the user running the program from a terminal window.
+    
+    Arguments: None
+    
+    Returns:
+        parser.parse_args() (obj): An object which contains all the passed arguments
     """
     parser = argparse.ArgumentParser('This is the model training module') 
     
@@ -43,10 +43,20 @@ def get_input_args():
     return parser.parse_args() 
 
 def get_image_datasets(data_dir):
+    """
+    Prepares and returns the train, validation and test datasets from the 
+    data directory
+    
+    Arguments:
+        data_dir (str): Path of the data directory containing the training, 
+                        validation and testing data
+                        
+    Returns: A dictionary which contains the train, validation and test datasets
+    """
     train_dir = data_dir + '/train'
     valid_dir = data_dir + '/valid'
     test_dir = data_dir + '/test'
-    
+    # Gets the image transforms
     image_transforms = get_image_transforms()
     train_datasets = datasets.ImageFolder(train_dir, transform=image_transforms['train'])
     valid_datasets = datasets.ImageFolder(valid_dir, transform=image_transforms['valid'])
@@ -60,6 +70,16 @@ def get_image_datasets(data_dir):
     
     
 def get_image_loader(image_datasets):
+    """
+    Prepares and returns the train, validation and test data loader from the 
+    datasets
+    
+    Arguments:
+        image_datasets (dict): A dictionary containing the train, validation and
+                               test datasets
+                        
+    Returns: A dictionary which contains the train, validation and test data loader
+    """    
     train_loader = torch.utils.data.DataLoader(image_datasets['train'], batch_size=64, shuffle=True)
     valid_loader = torch.utils.data.DataLoader(image_datasets['valid'], batch_size=64)
     test_loader = torch.utils.data.DataLoader(image_datasets['test'], batch_size=64)
@@ -72,19 +92,27 @@ def get_image_loader(image_datasets):
 
     
 def get_image_transforms():
+    """
+    Prepares and returns the train, validation and test data transforms
+    
+    Arguments: None
+                        
+    Returns: A dictionary which contains the train, validation and test datas transforms
+    """
+    # Random rotation, cropping and flipping
     train_transforms = transforms.Compose([transforms.RandomRotation(30),
                                            transforms.RandomResizedCrop(224),
                                            transforms.RandomHorizontalFlip(),
                                            transforms.ToTensor(),
                                            transforms.Normalize([0.485, 0.456, 0.406],
                                                                 [0.229, 0.224, 0.225])])
-
+    # Only crop images to 224x224
     valid_transforms = transforms.Compose([transforms.Resize(255),
                                           transforms.CenterCrop(224),
                                           transforms.ToTensor(),
                                           transforms.Normalize([0.485, 0.456, 0.406],
                                                                [0.229, 0.224, 0.225])])
-    
+    # Only crop images to 224x224
     test_transforms = transforms.Compose([transforms.Resize(255),
                                           transforms.CenterCrop(224),
                                           transforms.ToTensor(),
@@ -100,7 +128,14 @@ def get_image_transforms():
 
 def get_model(arch):
     """
-    Gets the command-line arguments passed by the user.
+    Retreives the model architecture from PyTorch for training. It fetches one of the
+    three models which are: VGG, ALEXNET and DENSENET
+    
+    Arguments:
+        arch (str): The model architecture [vgg, alexnet, resnet]
+        
+    Returns:
+        model (obj): The fetched model
     """
     print('[MODEL] Fetching {} model architecture ...'.format(arch.upper()))
     if (arch == 'vgg'):
@@ -115,11 +150,33 @@ def get_model(arch):
 
 
 def save_model(model, optimizer, image_datasets, arch, save_dir, input_size):
+    """
+    Saves the trained model to the specified directory
+    
+    Arguments:
+        - model (obj): The trained model
+        - optimizer (obj): The optimzer user for training
+        - image_datasets (dict): The train, validation and test datasets
+        - arch (str): The model architecture name
+        - save_dir (str): Path to save the trained model or checkpoint
+        - input_size (int): The input size of the classifir network
+        
+    Returns:
+        On succuess:
+            True, checkpoint_path (tuple): Indicating success
+                - True (bool): indicating the file is saved
+                - checkpoint_path (str): The path to the saved model
+        On failiure:
+            False, None (tuple): Indicating failiure
+                - False (bool): Indicating the file is not sad
+                - None: Indicating the path to sad model is None
+    """
     print('[SAVE MODEL] Attempting to save model')
     
     checkpoint_dir = save_dir
     checkpoint_name = arch + '_checkpoint.pth'
     checkpoint_path = os.path.join(checkpoint_dir, checkpoint_name)
+    # Creates the directory first before continuing
     os.makedirs(checkpoint_dir, exist_ok=True)
     
     model.train()
@@ -136,6 +193,7 @@ def save_model(model, optimizer, image_datasets, arch, save_dir, input_size):
         torch.save(checkpoint, checkpoint_path)
     except Exception:
         print('[SAVE MODEL] ERROR: Unable to save model, cleaning up ...')
+        # Clean up if saving fails
         delete_model(checkpoint_path)
     else:
         print('[SAVE MODEL] Save Complete')
@@ -145,6 +203,14 @@ def save_model(model, optimizer, image_datasets, arch, save_dir, input_size):
         
         
 def delete_model(checkpoint_path):
+    """
+    Deletes a checkpoint or saved model specified by the path
+    
+    Arguments:
+        checkpoint_path (str): Path of the checkpoint to be deleted
+        
+    Returns: None
+    """
     print('\t[DELETE MODEL] Attempting to delete model')
     try:
         os.remove(checkpoint_path)
@@ -155,15 +221,27 @@ def delete_model(checkpoint_path):
     
 
 def load_checkpoint(checkpoint_path):
-    """I took the below if else statement from the accepted answer of this stackoverflow question:
-    https://stackoverflow.com/questions/55759311/runtimeerror-cuda-runtime-error-35-cuda-driver-version-is-insufficient-for
     """
+    Loads a saved checkpoint or model specified by the path
+    
+    Arguments:
+        checkpoint_path (str): Path to the saved checkpoint
+        
+    Returns:
+        model, optimizer (tuple): The model and optimizer
+            - model (obj): The model that is loaded from the checkpoint
+            - optimizer (obj): The optimizer used for training
+    """
+    # I took the below if else statement from the accepted answer of this 
+    # stackoverflow question:
+    # https://stackoverflow.com/questions/55759311/runtimeerror-cuda-runtime-error-35-cuda-driver-version-is-insufficient-for
     if torch.cuda.is_available():
         map_location=lambda storage, loc: storage.cuda()
     else:
         map_location='cpu'
 
     checkpoint = torch.load(checkpoint_path, map_location=map_location)
+    # Get the model architecture name since it is already saved
     arch = checkpoint['arch']
     
     model = None
@@ -173,8 +251,9 @@ def load_checkpoint(checkpoint_path):
         model = models.alexnet()
     elif arch == 'densenet':
         model = models.densenet121()
-        
+    # Get the image datasets    
     image_datasets = checkpoint['image_datasets']  
+    # Build the classifier netwaork from the saved arguments
     classifier = classifier_network.Network(checkpoint['input_size'],
                              checkpoint['output_size'],
                              checkpoint['hidden_layers'])
@@ -183,15 +262,27 @@ def load_checkpoint(checkpoint_path):
     model.load_state_dict(checkpoint['model_state_dict'])
     model.class_to_idx = image_datasets['train'].class_to_idx
     model.eval()
-
     optimizer = optim.Adam(model.classifier.parameters(), lr=0.001)
+    # Load the saved state_dict of the optimizer
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     return model, optimizer
 
 
 def test_saved_model(checkpoint_path, test_loader, device, criterion):
+    """
+    Tests a saved checkpoint or model with the test datasets
+    
+    Arguments:
+        - checkpoint_path (str): Path of the checkpoint to be testedd
+        - test_loader (obj): The test data loader
+        - device (str): The default device to run the test
+        - criterion (obj): The criterion to use for testing
+        
+    Returns: None
+    """
     print('\n===== SAVED MODEL TESTING STARTED =====')
+    # Load the checkpoint that is to be tested
     model, optimizer = load_checkpoint(checkpoint_path)
     
     model.to(device)
@@ -220,8 +311,19 @@ def test_saved_model(checkpoint_path, test_loader, device, criterion):
 
 
 def get_device(use_gpu):
+    """
+    Gets the default device to run the operation, which is either
+    GPU (CUDA) or CPU
+    
+    Arguments:
+        use_gpu (bool): Indicates whether to use the gpu o not
+        
+    Returns:
+        device (str): The device to use
+    """
     device = "cpu"
     if use_gpu:
+        # Checks if GPU is available
         device = "cuda" if torch.cuda.is_available() else "cpu"  
         if device == "cpu":
             print('[DEVICE] ERROR: GPU is not available continuing with CPU')
