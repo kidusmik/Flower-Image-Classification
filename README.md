@@ -31,10 +31,10 @@ All code follows [PEP8 style guidelines](https://www.python.org/dev/peps/pep-000
 
 The project includes three CLI modules which are `train.py`, `predict.py` and `test.py`. The first file, `train.py`, will train a new network on a dataset and save the model as a checkpoint. The second file, `predict.py`, uses a trained network to predict the class for an input image. The third file, `test.py`, tests the saved checkpoint against the test data sets.
 
-1. Training module
+### 1. Training module
 Trains a new network on a data set. It also prints out training loss, validation loss, and validation accuracy as the network trains.
 
-### Basic usage
+#### Basic usage
 ```
 python train.py data_dir [--save_dir SAVE_DIR]
 						 [--arch {vgg,alexnet,densenet}] 
@@ -53,7 +53,7 @@ Or:
                     [--gpu]
 ```
 
-### Options
+#### Options
 - `data_dir` -> `str` `positional` Path/location of the training data
 - `save_dir` -> `str` `optional` Location to save the trained the model to
   - default: `saved_models`
@@ -67,10 +67,10 @@ Or:
   - default: 1
 - `gpu` -> `bool` `optional` Specifies whether to use GPU for training
 
-2. Predict module
+### 2. Predict module
 Predict flower name from an image with predict.py along with the probability of that name. That is, user passes in a single image /path/to/image and return the flower name and class probability.
 
-### Basic usage
+#### Basic usage
 ```
 python predict.py input checkpoint [--top_k TOP_K]
 								   [--category_names CATEGORY_NAMES]
@@ -83,7 +83,7 @@ Or:
                               [--gpu]
 ```
 
-### Options
+#### Options
 - `input` -> `string` `positional` Path/location of the image to be predicted
 - `checkpoint` -> `string` `positional` Path/Location of the saved model
 - `top_k` -> `integer` `optional` The number of top most likely predicted classes
@@ -92,10 +92,10 @@ Or:
   - default: `cat_to_name`
 - `gpu` -> `bool` `optional` Specifies whether to use GPU for training
 
-3. Test module
+### 3. Test module
 Tests a trained model or checkpoint that is passed by the user.
 
-### Basic usage
+#### Basic usage
 ```
 python test.py checkpoint data_dir [--gpu]
 ```
@@ -104,7 +104,7 @@ Or:
 ./test.py checkpoint data_dir [--gpu]
 ```
 
-### Options
+#### Options
 - `data_dir` -> `str` `positional` Path/location of the training data
 - `checkpoint` -> `string` `positional` Path/Location of the saved model
 - `gpu` -> `bool` `optional` Specifies whether to use GPU for training
